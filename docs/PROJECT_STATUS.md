@@ -1,17 +1,35 @@
+# Estado del proyecto
 
+## Fase actual
 
-Cada cambio debe dejar el repositorio en un estado igual o mejor que antes.
+Fase 1 — Base del proyecto, completada.
 
-El agente debe:
+## Funcionalidades terminadas
 
-- Entender antes de modificar.
-- Planificar antes de implementar.
-- Implementar por incrementos.
-- Probar después de cada cambio.
-- Revisar antes de finalizar.
-- Documentar el comportamiento real.
-- Informar con honestidad lo que fue y no fue comprobado.
+- Estructura modular inicial bajo `src/gesture_matcher`.
+- Empaquetado editable y dependencias declaradas.
+- Configuración YAML con dataclasses inmutables y validación estricta.
+- Resolución segura de rutas relativas al proyecto.
+- Configuración central de logging.
+- Punto de entrada que informa con claridad si falta el modelo.
+- Directorios separados para referencias, presentación, datos y modelos.
 
-Nunca declarar una fase terminada basándose solamente en que el código fue escrito.
+## Funcionalidades en progreso
 
-Una fase termina cuando el código funciona, las pruebas relevantes pasan, los errores están controlados y la documentación coincide con la implementación.
+- Ninguna dentro de este incremento.
+
+## Problemas conocidos
+
+- `models/hand_landmarker.task` no está incluido.
+- La cámara y el detector de manos aún no están implementados.
+- No existen plantillas ni señas de ejemplo procesadas.
+
+## Pruebas pendientes
+
+- Las pruebas de cámara con mocks se agregarán en la Fase 2.
+- La validación manual con cámara física comenzará después de implementar su servicio.
+
+## Próximo incremento recomendado
+
+Implementar y probar `CameraService`, asegurando apertura configurable, efecto
+espejo y liberación de recursos incluso ante errores.

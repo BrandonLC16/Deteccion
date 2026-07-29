@@ -1,3 +1,28 @@
 AGENTS.md
-.venv
+.venv/
+.venv*/
+venv/
+env/
 
+# Entornos virtuales creados accidentalmente en la raíz.
+/Lib/
+/Include/
+/pyvenv.cfg
+
+# Python y herramientas de desarrollo.
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+build/
+dist/
+
+# Artefactos generados por la construcción de plantillas.
+/data/*.npz
+/data/gestures.json
+
+# Modelos binarios descargados localmente.
+/models/*.task
