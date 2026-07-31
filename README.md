@@ -6,16 +6,19 @@ guardará fotogramas ni video automáticamente.
 
 ## Estado actual
 
-El repositorio se encuentra en la Fase 1: base del proyecto. Actualmente incluye:
+El repositorio se encuentra en la Fase 2: cámara, en progreso. Actualmente incluye:
 
 - paquete instalable con estructura `src`;
 - configuración YAML tipada y validada;
 - resolución segura de rutas relativas;
 - logging centralizado;
 - punto de entrada importable;
-- pruebas unitarias de configuración y recursos.
+- servicio de cámara con resolución configurable, efecto espejo y medición de FPS;
+- errores específicos y liberación segura de la captura;
+- pruebas unitarias de configuración, recursos y cámara mediante mocks.
 
-La captura de cámara, MediaPipe, reconocimiento y visualización todavía no están
+El servicio de cámara aún no está conectado al punto de entrada ni a una ventana de
+video. MediaPipe, el reconocimiento y la visualización de landmarks todavía no están
 implementados. El punto de entrada solo valida la base y reporta el modelo faltante.
 
 ## Requisitos
@@ -86,7 +89,8 @@ ruff check .
 ruff format --check .
 ```
 
-Las pruebas unitarias no requieren cámara física.
+Las pruebas unitarias no requieren cámara física. `CameraService` recibe una fábrica
+de captura inyectable para simular apertura, lectura, errores y liberación.
 
 ## Estructura
 
@@ -99,7 +103,7 @@ models/
 scripts/
 src/gesture_matcher/
 |-- app.py
-|-- camera/
+|-- camera/camera_service.py
 |-- recognition/
 |-- ui/
 |-- utils/
@@ -114,5 +118,6 @@ transmitir ni subir imágenes de la cámara sin una acción explícita del usuar
 
 ## Próximo incremento
 
-Implementar `CameraService` con apertura configurable, lectura de fotogramas,
-efecto espejo, errores específicos y liberación segura mediante mocks en pruebas.
+Conectar `CameraService` a un ciclo mínimo de video OpenCV, mostrar los FPS y
+garantizar el cierre de la ventana y la cámara ante salida normal o errores. Después
+se realizará la validación manual con una cámara física.
