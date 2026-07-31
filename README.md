@@ -6,7 +6,7 @@ guardará fotogramas ni video automáticamente.
 
 ## Estado actual
 
-El repositorio se encuentra en la Fase 3: detección de manos, en progreso.
+El repositorio completó la Fase 6: motor de reconocimiento.
 Actualmente incluye:
 
 - paquete instalable con estructura `src`;
@@ -21,10 +21,26 @@ Actualmente incluye:
 - dibujo de los 21 landmarks y sus conexiones;
 - ventana OpenCV con FPS, cantidad de manos y salida mediante Q o ESC;
 - pruebas unitarias de configuración, recursos, cámara, detección e interfaz.
+- normalización por muñeca y escala para los 21 landmarks de cada mano;
+- canonicalización opcional de manos izquierdas mediante reflexión del eje X;
+- extracción de vectores geométricos inmutables de 63 valores;
+- pruebas de invariancia a traslación, escala y lateralidad, además de entradas
+  inválidas.
+- detección offline de manos con MediaPipe en modo imagen;
+- recorrido y validación de carpetas de referencias;
+- orden canónico Left seguido de Right para señas de dos manos;
+- persistencia comprimida de plantillas NPZ y metadatos JSON versionados;
+- reporte detallado de imágenes aceptadas y rechazadas.
+- carga validada de plantillas y recursos asociados;
+- ranking por similitud coseno contra todas las muestras compatibles;
+- umbral global y umbrales individuales por seña;
+- resultado desconocido seguro para entradas vacías, inválidas o insuficientes;
+- filtrado estricto por cantidad de manos y dimensión.
 
 La cámara, el detector y la ventana ya están conectados desde el punto de entrada.
-El reconocimiento de señas todavía no está implementado y no se ejecuta ninguna
-comparación o clasificación.
+La extracción y el motor de reconocimiento todavía no están conectados al ciclo de
+video. Las imágenes de referencia se procesan únicamente mediante un script
+explícito y las plantillas se cargan una sola vez mediante `TemplateRepository`.
 
 ## Requisitos
 
@@ -65,6 +81,38 @@ Las secciones disponibles son:
 - `resources`: modelo, plantillas, metadatos e imágenes;
 - `logging`: nivel del registro técnico.
 
+## Construcción de plantillas
+
+Cada carpeta hija de `assets/reference_images/` representa una seña y debe usar un
+identificador `snake_case`. Se admiten archivos BMP, JPEG, JPG, PNG y WebP. Ejecuta
+`python scripts/build_templates.py` para construir las plantillas.
+
+El script carga el modelo una sola vez en modo `IMAGE`, valida cada archivo, detecta
+una o dos manos, extrae sus características y escribe
+`data/gesture_templates.npz` y `data/gestures.json`.
+
+Para dos manos, el orden siempre es `Left` seguido de `Right`, sin depender del
+orden devuelto por MediaPipe. El vector también agrega el desplazamiento relativo
+entre muñecas normalizado por el tamaño medio de las manos. Las imágenes sin manos,
+ilegibles, con extensión no permitida o con lateralidad ambigua se rechazan con un
+motivo específico. Las imágenes originales nunca se modifican.
+
+## Motor de reconocimiento
+
+`TemplateRepository` carga y valida conjuntamente el NPZ y el JSON. Rechaza
+versiones incompatibles, matrices corruptas, dimensiones incorrectas, valores no
+finitos y recursos asociados inexistentes.
+
+`GestureMatcher.match(features)` recibe un vector de 63 valores para una mano o
+129 para dos. Calcula similitud coseno contra todas las muestras con la misma
+cantidad de manos, conserva la mejor puntuación por seña y ordena el ranking de
+mayor a menor. Una coincidencia se acepta solo cuando alcanza su umbral individual
+o, en su ausencia, el umbral global.
+
+Las puntuaciones de cada muestra se registran con nivel `DEBUG`. Una entrada vacía,
+no finita, de norma cero o con dimensión incompatible devuelve `Seña desconocida`
+con puntuación `0.0`, sin lanzar excepciones.
+
 ## Modelo de MediaPipe
 
 El modelo no está incluido ni se descarga automáticamente. La ruta esperada es:
@@ -101,8 +149,9 @@ ruff format --check .
 ```
 
 Las pruebas unitarias no requieren cámara física ni un modelo MediaPipe válido.
-La cámara, Hand Landmarker, el reloj y las operaciones de ventana/dibujo tienen
-adaptadores inyectables para simular detección, errores y liberación.
+La cámara, Hand Landmarker, el reloj, el detector offline y las operaciones de
+ventana/dibujo tienen adaptadores inyectables para simular detección, errores y
+liberación.
 
 ## Estructura
 
@@ -112,15 +161,21 @@ config/config.yaml
 data/
 docs/
 models/
-scripts/
+scripts/build_templates.py
 src/gesture_matcher/
 |-- app.py
 |-- camera/camera_service.py
 |-- recognition/
+|   |-- feature_extractor.py
+|   |-- gesture_matcher.py
+|   |-- landmark_normalizer.py
+|   |-- template_builder.py
+|   `-- template_repository.py
 |-- ui/opencv_view.py
 |-- utils/
 `-- vision/
     |-- hand_detector.py
+    |-- image_hand_detector.py
     `-- landmark_drawer.py
 tests/
 ```
@@ -132,6 +187,5 @@ transmitir ni subir imágenes de la cámara sin una acción explícita del usuar
 
 ## Próximo incremento
 
-Agregar el modelo local y realizar la validación manual con cámara física para una y
-dos manos, verificando resolución, espejo, lateralidad, FPS y cierre seguro. Solo
-después de documentar esa validación corresponde iniciar la Fase 4 de normalización.
+Iniciar la Fase 7 implementando el filtro temporal para confirmar resultados durante
+varios fotogramas, reducir parpadeos y conservar explícitamente el estado desconocido.

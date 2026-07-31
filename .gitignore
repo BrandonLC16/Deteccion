@@ -26,3 +26,7 @@ dist/
 
 # Modelos binarios descargados localmente.
 /models/*.task
+
+# Imagenes utilizadas en la implementacion de los vectores
+assets/reference_images/*
+assets/display_images/*

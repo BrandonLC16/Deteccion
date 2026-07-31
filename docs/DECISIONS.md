@@ -63,3 +63,130 @@ fotogramas antes de medir que sean necesarios para el MVP.
   separación explícita de captura, inferencia e interfaz.
 - El detector valida timestamps para impedir llamadas no crecientes rechazadas por
   la API de MediaPipe.
+
+## 2026-07-31 — Normalización y vector de características por mano
+
+### Problema
+
+Los landmarks dependen de la posición y el tamaño aparente de la mano. Además, una
+misma geometría aparece reflejada entre manos izquierdas y derechas, por lo que no
+puede compararse de forma consistente sin definir un origen, una escala y una regla
+de lateralidad.
+
+### Alternativas consideradas
+
+- Centrar en la muñeca y escalar por la distancia máxima desde ella.
+- Escalar con una única distancia anatómica, como muñeca a dedo medio.
+- Conservar la lateralidad o reflejar las manos izquierdas a una geometría canónica.
+- Usar directamente las coordenadas normalizadas o aplanarlas en orden MediaPipe.
+
+### Decisión
+
+Para cada mano, restar la muñeca a los 21 landmarks y dividir las coordenadas por la
+mayor distancia euclidiana desde la muñeca. Cuando `mirror_left_hand` esté activo,
+reflejar el eje X de las manos `Left`. Aplanar después las coordenadas X, Y, Z en el
+orden de landmarks de MediaPipe para producir un vector `float32` de 63 valores.
+
+### Motivo
+
+La distancia máxima utiliza toda la extensión detectada y evita depender de un único
+dedo, que podría estar flexionado. La reflexión permite que una pose equivalente de
+mano izquierda o derecha comparta representación. Mantener todas las coordenadas
+conserva la geometría disponible sin agregar todavía un clasificador o plantillas.
+
+### Consecuencias
+
+- Los vectores son invariantes a traslación y escala uniforme.
+- Los valores no finitos, formas distintas de `(21, 3)` y manos sin extensión se
+  rechazan antes de comparar.
+- La reflexión puede desactivarse desde la configuración cuando la lateralidad tenga
+  significado para una seña.
+- Cada vector representa una mano por separado. La construcción de plantillas de dos
+  manos deberá definir un orden canónico y características espaciales entre manos.
+
+## 2026-07-31 — Orden canónico y formato persistido de plantillas
+
+### Problema
+
+MediaPipe no garantiza que dos manos lleguen en el mismo orden entre imágenes. La
+concatenación directa produciría vectores distintos para la misma seña y la
+normalización individual eliminaría la posición relativa entre manos. También se
+necesita relacionar de forma verificable cada fila persistida con su imagen fuente.
+
+### Alternativas consideradas
+
+- Conservar el orden de detección de MediaPipe.
+- Ordenar por la coordenada horizontal de las muñecas.
+- Ordenar por lateralidad y rechazar pares ambiguos.
+- Guardar un archivo por muestra o matrices agrupadas por clase.
+
+### Decisión
+
+Para dos manos, exigir exactamente una lateralidad `Left` y una `Right`, y
+concatenar siempre Left antes de Right. Después de los dos vectores de 63 valores,
+agregar el desplazamiento `Right wrist - Left wrist` dividido por la escala media
+de ambas manos. El vector de dos manos tiene por tanto 129 valores.
+
+Cuando una carpeta mezcla muestras de una y dos manos, conservar la cantidad con
+mayoría única y rechazar las inconsistentes; un empate invalida la clase. Persistir
+una matriz `float32` por clase en un NPZ comprimido y un JSON versionado con
+metadatos, lateralidades, umbrales y rutas relativas de las muestras.
+
+### Motivo
+
+La lateralidad expresa una identidad estable que no depende de la posición de las
+manos en la imagen. El desplazamiento relativo conserva dirección y separación de
+las muñecas, manteniendo invariancia a traslación y escala uniforme. Agrupar varias
+muestras por clase permite compararlas todas sin reconstruir plantillas al iniciar.
+
+### Consecuencias
+
+- El orden del resultado no depende del orden devuelto por MediaPipe.
+- Imágenes de dos manos con lateralidad ausente o duplicada se rechazan.
+- Las plantillas de una mano tienen dimensión 63 y las de dos manos dimensión 129.
+- El reconocimiento deberá comparar únicamente observaciones y plantillas con igual
+  cantidad de manos y dimensión.
+- Las imágenes originales no se modifican y los artefactos pueden regenerarse con
+  `python scripts/build_templates.py`.
+
+## 2026-07-31 — Estrategia de comparación y rechazo
+
+### Problema
+
+Cada seña dispone de varias muestras y el motor debe producir una puntuación
+estable, evitar comparar cantidades distintas de manos y rechazar observaciones sin
+una similitud suficiente. También debe resolver empates de forma reproducible.
+
+### Alternativas consideradas
+
+- Promediar primero todos los vectores de una clase.
+- Promediar las similitudes de todas las muestras.
+- Usar la mejor similitud entre todas las muestras de cada clase.
+- Aplicar únicamente un umbral global o permitir umbrales por seña.
+
+### Decisión
+
+Calcular similitud coseno contra todas las muestras compatibles y utilizar la mejor
+puntuación de cada seña. Ordenar por puntuación descendente y por `gesture_id`
+ascendente en caso de empate. Inferir una mano para vectores de dimensión 63 y dos
+manos para dimensión 129, sin comparar otras dimensiones.
+
+La precedencia de umbrales es: sobrescritura entregada a `GestureMatcher`, umbral
+individual persistido y umbral global. Si la mejor puntuación no alcanza el umbral,
+devolver `MatchResult` desconocido conservando esa puntuación. Entradas vacías,
+no finitas, de norma cero o de dimensión incompatible devuelven puntuación `0.0`.
+
+### Motivo
+
+La mejor muestra conserva variaciones válidas de orientación y apertura sin diluirlas
+en un promedio que podría no representar ninguna pose real. El filtro por dimensión
+impide comparar accidentalmente una observación de una mano con una plantilla de
+dos. El desempate explícito hace las pruebas y resultados reproducibles.
+
+### Consecuencias
+
+- Agregar muestras amplía la cobertura de una clase sin reconstruir un centroide.
+- Una muestra atípica podría elevar la similitud; los umbrales por seña permiten
+  ajustarlo y deberán calibrarse con ejemplos negativos.
+- Las puntuaciones de cada muestra se registran únicamente en nivel `DEBUG`.
+- El motor permanece separado del video hasta que exista estabilización temporal.
