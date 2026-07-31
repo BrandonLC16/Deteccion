@@ -6,7 +6,8 @@ guardará fotogramas ni video automáticamente.
 
 ## Estado actual
 
-El repositorio se encuentra en la Fase 2: cámara, en progreso. Actualmente incluye:
+El repositorio se encuentra en la Fase 3: detección de manos, en progreso.
+Actualmente incluye:
 
 - paquete instalable con estructura `src`;
 - configuración YAML tipada y validada;
@@ -15,15 +16,19 @@ El repositorio se encuentra en la Fase 2: cámara, en progreso. Actualmente incl
 - punto de entrada importable;
 - servicio de cámara con resolución configurable, efecto espejo y medición de FPS;
 - errores específicos y liberación segura de la captura;
-- pruebas unitarias de configuración, recursos y cámara mediante mocks.
+- `HandDetector` basado en MediaPipe Tasks Hand Landmarker en modo video;
+- detección configurable de una o dos manos, lateralidad y estado sin manos;
+- dibujo de los 21 landmarks y sus conexiones;
+- ventana OpenCV con FPS, cantidad de manos y salida mediante Q o ESC;
+- pruebas unitarias de configuración, recursos, cámara, detección e interfaz.
 
-El servicio de cámara aún no está conectado al punto de entrada ni a una ventana de
-video. MediaPipe, el reconocimiento y la visualización de landmarks todavía no están
-implementados. El punto de entrada solo valida la base y reporta el modelo faltante.
+La cámara, el detector y la ventana ya están conectados desde el punto de entrada.
+El reconocimiento de señas todavía no está implementado y no se ejecuta ninguna
+comparación o clasificación.
 
 ## Requisitos
 
-- Windows, Linux o macOS con cámara compatible con OpenCV para las fases futuras.
+- Windows, Linux o macOS con cámara compatible con OpenCV.
 - Python 3.11 o 3.12.
 
 El rango de Python se limita a las versiones que MediaPipe declara y prueba para
@@ -68,10 +73,10 @@ El modelo no está incluido ni se descarga automáticamente. La ruta esperada es
 models/hand_landmarker.task
 ```
 
-Mientras falte, el punto de entrada mostrará una advertencia específica. La
-validación estricta del modelo se incorporará junto con `HandDetector` en la Fase 3.
+Mientras falte, `HandDetector` detendrá el inicio con un error específico que muestra
+la ruta esperada. El modelo se carga una sola vez y se libera al cerrar la aplicación.
 
-## Ejecución actual
+## Ejecución
 
 Después de instalar el proyecto:
 
@@ -79,7 +84,13 @@ Después de instalar el proyecto:
 python -m gesture_matcher.app
 ```
 
-Por ahora este comando valida configuración y recursos básicos. No abre la cámara.
+El comando carga el modelo, abre la cámara configurada y muestra el video con los
+landmarks detectados. Presiona Q o ESC para cerrar. La cámara, MediaPipe y las
+ventanas OpenCV se liberan tanto en la salida normal como ante errores.
+
+Los parámetros `hand_detection.max_hands`, `display.show_landmarks` y
+`display.show_fps` permiten seleccionar una o dos manos y activar o desactivar las
+anotaciones correspondientes.
 
 ## Pruebas y estilo
 
@@ -89,8 +100,9 @@ ruff check .
 ruff format --check .
 ```
 
-Las pruebas unitarias no requieren cámara física. `CameraService` recibe una fábrica
-de captura inyectable para simular apertura, lectura, errores y liberación.
+Las pruebas unitarias no requieren cámara física ni un modelo MediaPipe válido.
+La cámara, Hand Landmarker, el reloj y las operaciones de ventana/dibujo tienen
+adaptadores inyectables para simular detección, errores y liberación.
 
 ## Estructura
 
@@ -105,9 +117,11 @@ src/gesture_matcher/
 |-- app.py
 |-- camera/camera_service.py
 |-- recognition/
-|-- ui/
+|-- ui/opencv_view.py
 |-- utils/
 `-- vision/
+    |-- hand_detector.py
+    `-- landmark_drawer.py
 tests/
 ```
 
@@ -118,6 +132,6 @@ transmitir ni subir imágenes de la cámara sin una acción explícita del usuar
 
 ## Próximo incremento
 
-Conectar `CameraService` a un ciclo mínimo de video OpenCV, mostrar los FPS y
-garantizar el cierre de la ventana y la cámara ante salida normal o errores. Después
-se realizará la validación manual con una cámara física.
+Agregar el modelo local y realizar la validación manual con cámara física para una y
+dos manos, verificando resolución, espejo, lateralidad, FPS y cierre seguro. Solo
+después de documentar esa validación corresponde iniciar la Fase 4 de normalización.
