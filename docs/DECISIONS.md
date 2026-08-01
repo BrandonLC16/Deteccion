@@ -190,3 +190,46 @@ dos. El desempate explícito hace las pruebas y resultados reproducibles.
   ajustarlo y deberán calibrarse con ejemplos negativos.
 - Las puntuaciones de cada muestra se registran únicamente en nivel `DEBUG`.
 - El motor permanece separado del video hasta que exista estabilización temporal.
+
+## 2026-07-31 — Estrategia de estabilización temporal
+
+### Problema
+
+Una coincidencia válida en un solo fotograma puede desaparecer o alternar por
+pequeñas variaciones de landmarks. Confirmar únicamente el último resultado haría
+parpadear la etiqueta y la imagen de presentación.
+
+### Alternativas consideradas
+
+- Exigir solo una racha de resultados consecutivos.
+- Elegir únicamente la mayoría dentro de una ventana.
+- Suavizar las puntuaciones numéricas de cada clase.
+- Combinar dominancia, racha mínima, retención e histéresis con estado explícito.
+
+### Decisión
+
+Mantener una ventana acotada de `MatchResult` y contar solo resultados aceptados.
+Una nueva seña requiere una mayoría única, al menos `stable_frames` votos y una
+racha final de `min_consecutive_frames`. Los empates no confirman ni cambian una
+seña.
+
+Después de confirmar, conservar el último resultado durante `hold_frames` ausencias.
+Aplicar histéresis reduciendo en `hysteresis_frames` el número de votos necesario
+para mantener una seña ya activa, sin reducir el umbral para activar una nueva.
+Una candidata diferente debe cumplir de nuevo dominancia, votos y consecutividad.
+
+### Motivo
+
+La mayoría tolera interrupciones aisladas, la racha evita confirmar ruido disperso,
+la retención cubre pérdidas breves y la histéresis evita alternancias cerca del
+umbral. El filtro devuelve el `MatchResult` confirmado completo, por lo que también
+mantiene estable la ruta de la imagen asociada.
+
+### Consecuencias
+
+- La latencia de confirmación y permanencia se controla desde `config/config.yaml`.
+- `reset()` obliga a confirmar nuevamente después de reiniciar el flujo.
+- El filtro no mezcla cantidades de manos; recibe resultados ya validados por
+  `GestureMatcher`.
+- Los valores expresados en fotogramas deberán calibrarse con el FPS observado al
+  integrar el motor al video.

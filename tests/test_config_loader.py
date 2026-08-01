@@ -23,7 +23,13 @@ def valid_config() -> dict[str, object]:
             "gesture_thresholds": {"victory": 0.9},
             "mirror_left_hand": True,
         },
-        "temporal_filter": {"window_size": 7, "stable_frames": 5},
+        "temporal_filter": {
+            "window_size": 7,
+            "stable_frames": 5,
+            "min_consecutive_frames": 3,
+            "hold_frames": 3,
+            "hysteresis_frames": 1,
+        },
         "display": {
             "show_landmarks": True,
             "show_fps": True,
@@ -67,6 +73,9 @@ def test_loads_valid_configuration(
     assert config.camera.width == 1280
     assert config.hand_detection.max_hands == 2
     assert config.recognition.gesture_thresholds["victory"] == pytest.approx(0.9)
+    assert config.temporal_filter.min_consecutive_frames == 3
+    assert config.temporal_filter.hold_frames == 3
+    assert config.temporal_filter.hysteresis_frames == 1
     assert (
         config.resources.hand_model
         == (project_root / "models/hand_landmarker.task").resolve()
@@ -149,4 +158,29 @@ def test_rejects_more_stable_frames_than_window(
     config_path = write_config(project_root, invalid)
 
     with pytest.raises(ConfigError, match="stable_frames"):
+        load_config(config_path, project_root=project_root)
+
+
+@pytest.mark.parametrize(
+    ("field_name", "invalid_value"),
+    [
+        ("min_consecutive_frames", 0),
+        ("min_consecutive_frames", 8),
+        ("hold_frames", -1),
+        ("hold_frames", True),
+        ("hysteresis_frames", -1),
+        ("hysteresis_frames", 5),
+    ],
+)
+def test_rejects_invalid_temporal_filter_parameters(
+    project_root: Path,
+    valid_config: dict[str, object],
+    field_name: str,
+    invalid_value: object,
+) -> None:
+    invalid = deepcopy(valid_config)
+    invalid["temporal_filter"][field_name] = invalid_value  # type: ignore[index]
+    config_path = write_config(project_root, invalid)
+
+    with pytest.raises(ConfigError, match=field_name):
         load_config(config_path, project_root=project_root)

@@ -19,6 +19,9 @@ recognition:
 temporal_filter:
   window_size: 7
   stable_frames: 5
+  min_consecutive_frames: 3
+  hold_frames: 3
+  hysteresis_frames: 1
 
 display:
   show_landmarks: true

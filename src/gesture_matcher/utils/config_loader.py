@@ -55,6 +55,9 @@ class TemporalFilterConfig:
 
     window_size: int
     stable_frames: int
+    min_consecutive_frames: int
+    hold_frames: int
+    hysteresis_frames: int
 
 
 @dataclass(frozen=True)
@@ -159,14 +162,38 @@ def load_config(
 
     window_size = _integer(temporal_data, "window_size", minimum=1)
     stable_frames = _integer(temporal_data, "stable_frames", minimum=1)
+    min_consecutive_frames = _integer(
+        temporal_data,
+        "min_consecutive_frames",
+        minimum=1,
+    )
+    hold_frames = _integer(temporal_data, "hold_frames", minimum=0)
+    hysteresis_frames = _integer(
+        temporal_data,
+        "hysteresis_frames",
+        minimum=0,
+    )
     if stable_frames > window_size:
         raise ConfigError(
             "temporal_filter.stable_frames no puede superar "
             "temporal_filter.window_size."
         )
+    if min_consecutive_frames > window_size:
+        raise ConfigError(
+            "temporal_filter.min_consecutive_frames no puede superar "
+            "temporal_filter.window_size."
+        )
+    if hysteresis_frames >= stable_frames:
+        raise ConfigError(
+            "temporal_filter.hysteresis_frames debe ser menor que "
+            "temporal_filter.stable_frames."
+        )
     temporal_filter = TemporalFilterConfig(
         window_size=window_size,
         stable_frames=stable_frames,
+        min_consecutive_frames=min_consecutive_frames,
+        hold_frames=hold_frames,
+        hysteresis_frames=hysteresis_frames,
     )
 
     display = DisplayConfig(

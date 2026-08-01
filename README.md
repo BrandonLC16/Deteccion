@@ -6,7 +6,7 @@ guardará fotogramas ni video automáticamente.
 
 ## Estado actual
 
-El repositorio completó la Fase 6: motor de reconocimiento.
+El repositorio completó la Fase 7: estabilización temporal.
 Actualmente incluye:
 
 - paquete instalable con estructura `src`;
@@ -36,11 +36,15 @@ Actualmente incluye:
 - umbral global y umbrales individuales por seña;
 - resultado desconocido seguro para entradas vacías, inválidas o insuficientes;
 - filtrado estricto por cantidad de manos y dimensión.
+- ventana temporal configurable con confirmación por dominancia y racha mínima;
+- retención breve del último resultado e histéresis para evitar alternancias;
+- reinicio explícito del historial y conservación estable de la imagen asociada.
 
 La cámara, el detector y la ventana ya están conectados desde el punto de entrada.
-La extracción y el motor de reconocimiento todavía no están conectados al ciclo de
-video. Las imágenes de referencia se procesan únicamente mediante un script
-explícito y las plantillas se cargan una sola vez mediante `TemplateRepository`.
+La extracción, el motor de reconocimiento y el filtro temporal todavía no están
+conectados al ciclo de video. Las imágenes de referencia se procesan únicamente
+mediante un script explícito y las plantillas se cargan una sola vez mediante
+`TemplateRepository`.
 
 ## Requisitos
 
@@ -76,7 +80,7 @@ Las secciones disponibles son:
 - `camera`: índice, resolución y modo espejo;
 - `hand_detection`: máximo de manos y confianzas mínimas;
 - `recognition`: similitud coseno, umbrales y tratamiento de lateralidad;
-- `temporal_filter`: ventana y fotogramas necesarios para estabilidad;
+- `temporal_filter`: ventana, votos, racha consecutiva, retención e histéresis;
 - `display`: landmarks, FPS y tamaño de la imagen asociada;
 - `resources`: modelo, plantillas, metadatos e imágenes;
 - `logging`: nivel del registro técnico.
@@ -112,6 +116,22 @@ o, en su ausencia, el umbral global.
 Las puntuaciones de cada muestra se registran con nivel `DEBUG`. Una entrada vacía,
 no finita, de norma cero o con dimensión incompatible devuelve `Seña desconocida`
 con puntuación `0.0`, sin lanzar excepciones.
+
+## Estabilización temporal
+
+`TemporalFilter.update(result)` conserva una ventana de resultados del motor. Una
+seña se confirma cuando tiene una mayoría única, alcanza `stable_frames` votos y
+también aparece durante `min_consecutive_frames` al final de la ventana.
+
+Después de confirmar, `hold_frames` conserva brevemente el último resultado ante
+ausencias. `hysteresis_frames` reduce el umbral necesario para mantener una seña ya
+activa, pero no el requerido para activar una nueva. Una seña diferente solo toma
+el control cuando se vuelve dominante y cumple su propia racha consecutiva. Esto
+mantiene estable también `display_image_path` frente a variaciones aisladas.
+
+`TemporalFilter.reset()` elimina la ventana y obliga a confirmar nuevamente. El
+filtro trabaja únicamente con resultados aceptados por `GestureMatcher`; por ello,
+el control previo de una o dos manos permanece vigente.
 
 ## Modelo de MediaPipe
 
@@ -170,6 +190,7 @@ src/gesture_matcher/
 |   |-- gesture_matcher.py
 |   |-- landmark_normalizer.py
 |   |-- template_builder.py
+|   |-- temporal_filter.py
 |   `-- template_repository.py
 |-- ui/opencv_view.py
 |-- utils/
@@ -187,5 +208,6 @@ transmitir ni subir imágenes de la cámara sin una acción explícita del usuar
 
 ## Próximo incremento
 
-Iniciar la Fase 7 implementando el filtro temporal para confirmar resultados durante
-varios fotogramas, reducir parpadeos y conservar explícitamente el estado desconocido.
+Iniciar la Fase 8 conectando extracción, reconocimiento y estabilización al ciclo de
+video, y presentar etiqueta, similitud e imagen asociada sin realizar lecturas de
+disco por fotograma.

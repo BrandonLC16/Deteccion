@@ -2,7 +2,7 @@
 
 ## Fase actual
 
-Fase 6 — Motor de reconocimiento, completada.
+Fase 7 — Estabilización temporal, completada.
 
 ## Funcionalidades terminadas
 
@@ -42,7 +42,7 @@ Fase 6 — Motor de reconocimiento, completada.
 - Recorrido de carpetas, validación de imágenes y rechazo con motivos específicos.
 - Persistencia atómica por archivo en NPZ comprimido y JSON versionado.
 - Reporte de clases e imágenes aceptadas y rechazadas.
-- Ejecución real sobre 44 referencias: 42 aceptadas en cuatro clases y dos
+- Ejecución real sobre 55 referencias: 53 aceptadas en cinco clases y dos
   rechazadas por ausencia de manos detectables.
 - `TemplateRepository` con carga segura de NPZ/JSON, validación de versión,
   dimensiones, muestras, lateralidades, umbrales y recursos asociados.
@@ -53,35 +53,42 @@ Fase 6 — Motor de reconocimiento, completada.
 - Resultado desconocido con puntuación para entradas vacías, inválidas, de norma
   cero o con cantidad de manos incompatible.
 - Registro de puntuaciones por muestra en nivel `DEBUG`.
-- Auto-reconocimiento verificado de las 42 muestras persistidas en su clase
+- Auto-reconocimiento verificado de las 53 muestras persistidas en su clase
   correspondiente.
+- Clase real `gon_pose` validada con 11 muestras de dos manos, orden canónico
+  Left-Right y vectores de 129 valores.
+- `TemporalFilter` con ventana acotada, mayoría única y racha consecutiva mínima.
+- Retención breve de la última seña confirmada e histéresis para absorber
+  variaciones sin alternar la imagen asociada.
+- Cambio de seña únicamente cuando la candidata se vuelve dominante y estable.
+- Reinicio explícito del historial y tratamiento seguro del estado desconocido.
 
 ## Funcionalidades en progreso
 
-- Ninguna; la Fase 7 todavía no se ha iniciado.
+- Ninguna; la Fase 8 todavía no se ha iniciado.
 
 ## Problemas conocidos
 
 - `models/hand_landmarker.task` no está incluido.
-- La normalización y extracción todavía no están conectadas al ciclo de video.
+- La normalización, extracción, comparación y estabilización todavía no están
+  conectadas al ciclo de video.
 - Las imágenes `killua_pose_02.jpeg` y `kurapika_pose_05.jpeg` no produjeron
   detecciones y fueron excluidas de las plantillas.
 - No hay imágenes de presentación asociadas en `assets/display_images/`.
 - El reconocimiento todavía no está conectado al ciclo de video.
-- La estabilización temporal todavía no está implementada.
 
 ## Pruebas pendientes
 
 - Validación visual de cero y una mano, lateralidad y distintas orientaciones.
 - Validación manual explícita de salida mediante Q y ESC.
 - Prueba manual de error al desconectar la cámara durante el ciclo.
-- Validación real del orden canónico con una clase de referencias de dos manos;
-  actualmente las cuatro clases procesadas son de una mano.
 - Validación manual del rechazo y de las puntuaciones usando vectores capturados en
-  vivo, una vez que exista el filtro temporal.
+  vivo.
+- Validación visual de la estabilidad temporal y permanencia de la imagen asociada
+  dentro del ciclo de cámara.
 
 ## Próximo incremento recomendado
 
-Iniciar la Fase 7 implementando `TemporalFilter` con ventana configurable,
-confirmación por mayoría, reinicio del historial y tratamiento explícito del estado
-desconocido.
+Iniciar la Fase 8 conectando normalización, extracción, `GestureMatcher` y
+`TemporalFilter` al ciclo de video. Mostrar etiqueta, similitud e imagen asociada
+sin cargar recursos desde disco en cada fotograma.
