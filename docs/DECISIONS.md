@@ -274,6 +274,51 @@ misma confirmación e histéresis que la etiqueta.
 - El primer uso de una seña puede realizar una única lectura de disco.
 - Una imagen ausente se informa y no se intenta cargar nuevamente por fotograma.
 - Agregar una imagen de presentación requiere reconstruir metadatos.
-- El tamaño final se controla con `display.result_image_width` y
-  `display.result_image_height`.
+- El tamaño base almacenado en caché se controla con `display.result_image_width` y
+  `display.result_image_height`; la vista realiza el ajuste final a su sección.
 - La validación visual y el impacto real en FPS quedan pendientes en cámara física.
+
+## 2026-07-31 — Panel principal compacto, centrado y responsivo
+
+### Problema
+
+El lienzo anterior crecía a partir del tamaño nativo de la cámara y agregaba un panel
+lateral fijo. Esto podía ocupar gran parte de la pantalla, hacía que la cámara tuviera
+más peso visual que la imagen asociada y no respondía a cambios de tamaño de ventana.
+
+### Alternativas consideradas
+
+- Mantener dimensiones fijas y reducir únicamente la cámara.
+- Usar coordenadas absolutas para cada elemento.
+- Consultar el área útil de la ventana y calcular una geometría proporcional.
+- Cambiar la resolución de captura para obtener una cámara visualmente más pequeña.
+
+### Decisión
+
+Crear una ventana OpenCV redimensionable con tamaño inicial de 1024 × 640 píxeles y
+componer dentro de ella un panel de hasta 920 × 560 píxeles, centrado en ambos ejes.
+Distribuir el área visual horizontal en 38 % para cámara y 62 % para imagen de
+presentación, con 20 píxeles iniciales de separación y relleno interno. Colocar la
+etiqueta y la similitud debajo de ambas secciones.
+
+Recalcular la geometría a partir de `getWindowImageRect()` en cada actualización y
+usar el mismo ajuste proporcional con relleno para cámara e imagen. La cámara se
+redimensiona solo después de que detección y dibujo hayan terminado; no se modifica
+la resolución de captura ni la entrada de MediaPipe.
+
+### Motivo
+
+Una función geométrica independiente permite verificar centrado, límites y
+proporciones sin cámara ni ventana física. Los layouts relativos conservan el orden
+al redimensionar y el límite máximo mantiene compacto el contenido en pantallas
+grandes. Ajustar ambos recursos dentro de rectángulos evita deformación y mantiene
+la imagen confirmada como elemento principal.
+
+### Consecuencias
+
+- La cámara conserva landmarks, FPS y cantidad de manos ya dibujados.
+- La imagen asociada utiliza un área claramente mayor que la cámara.
+- En ventanas grandes el panel deja márgenes exteriores y no supera 920 × 560.
+- En ventanas más pequeñas se reducen proporcionalmente panel, espacios y texto.
+- `ImageCache`, la confirmación temporal y la lógica de reconocimiento no cambian.
+- La validación visual con cámara física sigue pendiente.

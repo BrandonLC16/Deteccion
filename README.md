@@ -40,12 +40,12 @@ Actualmente incluye:
 - retención breve del último resultado e histéresis para evitar alternancias;
 - reinicio explícito del historial y conservación estable de la imagen asociada.
 - pipeline conectado de detección, extracción, comparación y estabilización;
-- panel lateral con etiqueta, similitud e imagen de presentación;
+- panel principal compacto y centrado con cámara e imagen en proporción 38/62;
 - caché de imágenes con ajuste proporcional y reutilización entre fotogramas;
 - estado visible `Seña desconocida` mientras no exista una coincidencia confirmada.
 
 La cámara, el detector y la ventana ya están conectados desde el punto de entrada.
-La extracción, el motor de reconocimiento, el filtro temporal y el panel lateral se
+La extracción, el motor de reconocimiento, el filtro temporal y el panel visual se
 ejecutan dentro del ciclo de video. Las imágenes de referencia se procesan únicamente
 mediante un script explícito; las plantillas y cada imagen de presentación se cargan
 una sola vez y se reutilizan en memoria.
@@ -140,9 +140,18 @@ el control previo de una o dos manos permanece vigente.
 ## Visualización del resultado
 
 `RecognitionPipeline` conecta landmarks, extracción, comparación y estabilización.
-`OpenCVView` muestra el video con landmarks, FPS y cantidad de manos en el área
-principal, y reserva un panel lateral para la etiqueta, el porcentaje de similitud y
-la imagen asociada.
+`OpenCVView` muestra un panel compacto centrado dentro de una ventana redimensionable.
+La franja superior distribuye aproximadamente 38 % del ancho a la cámara y 62 % a
+la imagen asociada; la etiqueta y el porcentaje de similitud quedan debajo de ambas.
+El panel parte de una ventana de 1024 × 640 píxeles y limita su contenido a 920 × 560
+píxeles, por lo que conserva márgenes visibles y no crece hasta ocupar toda la
+pantalla.
+
+La geometría se recalcula cuando cambia el tamaño útil de la ventana. Tanto el video
+ya procesado como la imagen de presentación se ajustan dentro de su sección sin
+recortar ni deformar su relación de aspecto. Este ajuste ocurre después de la
+detección y del dibujo de landmarks: no modifica la resolución de cámara ni la
+entrada utilizada por MediaPipe.
 
 La imagen solo se solicita a `ImageCache` cuando el resultado estabilizado tiene
 `accepted=True`. La caché lee cada ruta de `assets/display_images/` una vez —también

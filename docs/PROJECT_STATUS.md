@@ -63,11 +63,14 @@ Fase 8 — Visualización del resultado, implementada con validación manual pen
 - Cambio de seña únicamente cuando la candidata se vuelve dominante y estable.
 - Reinicio explícito del historial y tratamiento seguro del estado desconocido.
 - `RecognitionPipeline` conectado al ciclo de video para cero, una o dos manos.
-- Panel lateral OpenCV con etiqueta, porcentaje de similitud e imagen asociada.
+- Panel OpenCV compacto, centrado y responsivo con cámara e imagen en proporción
+  aproximada 38/62, etiqueta y porcentaje de similitud.
 - Estado `Seña desconocida` visible hasta que el filtro confirme una coincidencia.
 - `ImageCache` con lectura única por ruta, caché de fallos y rutas limitadas al
   proyecto.
 - Redimensionado proporcional con márgenes para evitar deformar imágenes.
+- Adaptación al tamaño útil de la ventana sin modificar la resolución de cámara ni
+  la entrada del detector.
 - Cinco imágenes de presentación enlazadas en los metadatos reconstruidos.
 - Aparición de `gon_pose.jpg` validada a partir del quinto resultado confirmado y
   retención ante un fotograma transitorio de una mano.
