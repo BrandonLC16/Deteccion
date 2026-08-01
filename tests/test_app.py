@@ -1,10 +1,14 @@
 from dataclasses import replace
-from unittest.mock import MagicMock, Mock
+from unittest.mock import MagicMock, Mock, call
 
 import numpy as np
 import pytest
 
 import gesture_matcher.app as app_module
+from gesture_matcher.recognition.gesture_matcher import (
+    UNKNOWN_GESTURE_LABEL,
+    MatchResult,
+)
 from gesture_matcher.utils.config_loader import AppConfig, load_config
 from gesture_matcher.vision.hand_detector import (
     HandDetectionError,
@@ -24,6 +28,26 @@ def context_resource() -> MagicMock:
     return resource
 
 
+def unknown_result() -> MatchResult:
+    return MatchResult(
+        gesture_id=None,
+        label=UNKNOWN_GESTURE_LABEL,
+        similarity=0.1,
+        display_image_path=None,
+        accepted=False,
+    )
+
+
+def known_result() -> MatchResult:
+    return MatchResult(
+        gesture_id="victory",
+        label="Victory",
+        similarity=0.93,
+        display_image_path="assets/display_images/victory.jpg",
+        accepted=True,
+    )
+
+
 def test_run_application_connects_video_detection_drawing_and_view(
     app_config: AppConfig,
 ) -> None:
@@ -31,6 +55,8 @@ def test_run_application_connects_video_detection_drawing_and_view(
     detector = context_resource()
     view = context_resource()
     drawer = Mock()
+    recognition = Mock()
+    image_cache = Mock()
     first_frame = np.zeros((2, 2, 3), dtype=np.uint8)
     second_frame = np.ones((2, 2, 3), dtype=np.uint8)
     camera.read.side_effect = [first_frame, second_frame]
@@ -39,12 +65,16 @@ def test_run_application_connects_video_detection_drawing_and_view(
         HandDetectionResult(hands=(), timestamp_ms=1),
         HandDetectionResult(hands=(), timestamp_ms=2),
     ]
+    stable_results = [unknown_result(), known_result()]
+    recognition.recognize.side_effect = stable_results
     drawer.draw.side_effect = lambda frame, _hands: frame
     view.show.side_effect = [True, False]
     camera_factory = Mock(return_value=camera)
     detector_factory = Mock(return_value=detector)
     view_factory = Mock(return_value=view)
     drawer_factory = Mock(return_value=drawer)
+    recognition_factory = Mock(return_value=recognition)
+    image_cache_factory = Mock(return_value=image_cache)
 
     app_module.run_application(
         app_config,
@@ -52,6 +82,8 @@ def test_run_application_connects_video_detection_drawing_and_view(
         detector_factory=detector_factory,
         view_factory=view_factory,
         drawer_factory=drawer_factory,
+        recognition_factory=recognition_factory,
+        image_cache_factory=image_cache_factory,
     )
 
     camera_factory.assert_called_once_with(app_config.camera)
@@ -59,12 +91,22 @@ def test_run_application_connects_video_detection_drawing_and_view(
         app_config.hand_detection,
         app_config.resources.hand_model,
     )
-    view_factory.assert_called_once_with(app_config.display)
+    recognition_factory.assert_called_once_with(app_config)
+    image_cache_factory.assert_called_once_with(
+        project_root=app_config.project_root,
+        target_width=app_config.display.result_image_width,
+        target_height=app_config.display.result_image_height,
+    )
+    view_factory.assert_called_once_with(app_config.display, image_cache)
     assert camera.read.call_count == 2
     assert detector.detect.call_count == 2
     assert drawer.draw.call_count == 2
+    assert recognition.recognize.call_args_list == [call(()), call(())]
     assert view.show.call_count == 2
     assert all(call.kwargs["hand_count"] == 0 for call in view.show.call_args_list)
+    assert [
+        current.kwargs["result"] for current in view.show.call_args_list
+    ] == stable_results
     detector.__exit__.assert_called_once()
     camera.__exit__.assert_called_once()
     view.__exit__.assert_called_once()
@@ -85,6 +127,8 @@ def test_run_application_skips_drawing_when_landmarks_are_disabled(
     camera.fps = 0.0
     detector.detect.return_value = HandDetectionResult(hands=(), timestamp_ms=1)
     view.show.return_value = False
+    recognition = Mock()
+    recognition.recognize.return_value = unknown_result()
 
     app_module.run_application(
         config,
@@ -92,6 +136,8 @@ def test_run_application_skips_drawing_when_landmarks_are_disabled(
         detector_factory=Mock(return_value=detector),
         view_factory=Mock(return_value=view),
         drawer_factory=Mock(return_value=drawer),
+        recognition_factory=Mock(return_value=recognition),
+        image_cache_factory=Mock(return_value=Mock()),
     )
 
     drawer.draw.assert_not_called()
@@ -113,6 +159,8 @@ def test_run_application_releases_every_resource_after_detection_error(
             detector_factory=Mock(return_value=detector),
             view_factory=Mock(return_value=view),
             drawer_factory=Mock(),
+            recognition_factory=Mock(return_value=Mock()),
+            image_cache_factory=Mock(return_value=Mock()),
         )
 
     detector.__exit__.assert_called_once()

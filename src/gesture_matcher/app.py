@@ -5,6 +5,9 @@ from collections.abc import Callable
 from pathlib import Path
 
 from gesture_matcher.camera.camera_service import CameraError, CameraService
+from gesture_matcher.recognition.recognition_pipeline import RecognitionPipeline
+from gesture_matcher.recognition.template_repository import TemplateRepositoryError
+from gesture_matcher.ui.image_overlay import ImageCache, ImageOverlayError
 from gesture_matcher.ui.opencv_view import OpenCVView, OpenCVViewError
 from gesture_matcher.utils.config_loader import (
     AppConfig,
@@ -28,8 +31,10 @@ LOGGER = logging.getLogger(__name__)
 
 CameraFactory = Callable[[CameraConfig], CameraService]
 DetectorFactory = Callable[[HandDetectionConfig, Path], HandDetector]
-ViewFactory = Callable[[DisplayConfig], OpenCVView]
+ViewFactory = Callable[[DisplayConfig, ImageCache], OpenCVView]
 DrawerFactory = Callable[[], LandmarkDrawer]
+RecognitionFactory = Callable[[AppConfig], RecognitionPipeline]
+ImageCacheFactory = Callable[..., ImageCache]
 
 
 def run_application(
@@ -39,20 +44,29 @@ def run_application(
     detector_factory: DetectorFactory = HandDetector,
     view_factory: ViewFactory = OpenCVView,
     drawer_factory: DrawerFactory = LandmarkDrawer,
+    recognition_factory: RecognitionFactory = RecognitionPipeline.from_config,
+    image_cache_factory: ImageCacheFactory = ImageCache,
 ) -> None:
-    """Conecta cámara, detector y vista durante el ciclo de video."""
+    """Conecta detección, reconocimiento estable y presentación de video."""
+    recognition = recognition_factory(config)
+    image_cache = image_cache_factory(
+        project_root=config.project_root,
+        target_width=config.display.result_image_width,
+        target_height=config.display.result_image_height,
+    )
     with (
         detector_factory(
             config.hand_detection,
             config.resources.hand_model,
         ) as detector,
         camera_factory(config.camera) as camera,
-        view_factory(config.display) as view,
+        view_factory(config.display, image_cache) as view,
     ):
         drawer = drawer_factory()
         while True:
             frame = camera.read()
             detection = detector.detect(frame)
+            result = recognition.recognize(detection.hands)
             if config.display.show_landmarks:
                 frame = drawer.draw(frame, detection.hands)
 
@@ -60,6 +74,7 @@ def run_application(
                 frame,
                 fps=camera.fps,
                 hand_count=len(detection.hands),
+                result=result,
             )
             if not should_continue:
                 break
@@ -82,8 +97,10 @@ def main() -> int:
     except (
         CameraError,
         HandDetectorError,
+        ImageOverlayError,
         LandmarkDrawingError,
         OpenCVViewError,
+        TemplateRepositoryError,
     ) as exc:
         LOGGER.error("No se pudo ejecutar la aplicación: %s", exc)
         return 1

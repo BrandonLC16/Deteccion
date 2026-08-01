@@ -2,7 +2,7 @@
 
 ## Fase actual
 
-Fase 7 — Estabilización temporal, completada.
+Fase 8 — Visualización del resultado, implementada con validación manual pendiente.
 
 ## Funcionalidades terminadas
 
@@ -62,20 +62,25 @@ Fase 7 — Estabilización temporal, completada.
   variaciones sin alternar la imagen asociada.
 - Cambio de seña únicamente cuando la candidata se vuelve dominante y estable.
 - Reinicio explícito del historial y tratamiento seguro del estado desconocido.
+- `RecognitionPipeline` conectado al ciclo de video para cero, una o dos manos.
+- Panel lateral OpenCV con etiqueta, porcentaje de similitud e imagen asociada.
+- Estado `Seña desconocida` visible hasta que el filtro confirme una coincidencia.
+- `ImageCache` con lectura única por ruta, caché de fallos y rutas limitadas al
+  proyecto.
+- Redimensionado proporcional con márgenes para evitar deformar imágenes.
+- Cinco imágenes de presentación enlazadas en los metadatos reconstruidos.
+- Aparición de `gon_pose.jpg` validada a partir del quinto resultado confirmado y
+  retención ante un fotograma transitorio de una mano.
 
 ## Funcionalidades en progreso
 
-- Ninguna; la Fase 8 todavía no se ha iniciado.
+- Validación visual manual del panel con la cámara física.
 
 ## Problemas conocidos
 
 - `models/hand_landmarker.task` no está incluido.
-- La normalización, extracción, comparación y estabilización todavía no están
-  conectadas al ciclo de video.
 - Las imágenes `killua_pose_02.jpeg` y `kurapika_pose_05.jpeg` no produjeron
   detecciones y fueron excluidas de las plantillas.
-- No hay imágenes de presentación asociadas en `assets/display_images/`.
-- El reconocimiento todavía no está conectado al ciclo de video.
 
 ## Pruebas pendientes
 
@@ -86,9 +91,10 @@ Fase 7 — Estabilización temporal, completada.
   vivo.
 - Validación visual de la estabilidad temporal y permanencia de la imagen asociada
   dentro del ciclo de cámara.
+- Medición de FPS con el panel y la caché activos.
 
 ## Próximo incremento recomendado
 
-Iniciar la Fase 8 conectando normalización, extracción, `GestureMatcher` y
-`TemporalFilter` al ciclo de video. Mostrar etiqueta, similitud e imagen asociada
-sin cargar recursos desde disco en cada fotograma.
+Ejecutar la validación visual y calibración del MVP con cámara real. Si etiqueta,
+imagen, rechazo, estabilidad y rendimiento son adecuados, evaluar la Fase 9 de
+interfaz avanzada sin acoplar la lógica de reconocimiento a la UI.

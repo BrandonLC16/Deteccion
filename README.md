@@ -6,7 +6,7 @@ guardará fotogramas ni video automáticamente.
 
 ## Estado actual
 
-El repositorio completó la Fase 7: estabilización temporal.
+El repositorio implementó la Fase 8: visualización del resultado.
 Actualmente incluye:
 
 - paquete instalable con estructura `src`;
@@ -39,12 +39,16 @@ Actualmente incluye:
 - ventana temporal configurable con confirmación por dominancia y racha mínima;
 - retención breve del último resultado e histéresis para evitar alternancias;
 - reinicio explícito del historial y conservación estable de la imagen asociada.
+- pipeline conectado de detección, extracción, comparación y estabilización;
+- panel lateral con etiqueta, similitud e imagen de presentación;
+- caché de imágenes con ajuste proporcional y reutilización entre fotogramas;
+- estado visible `Seña desconocida` mientras no exista una coincidencia confirmada.
 
 La cámara, el detector y la ventana ya están conectados desde el punto de entrada.
-La extracción, el motor de reconocimiento y el filtro temporal todavía no están
-conectados al ciclo de video. Las imágenes de referencia se procesan únicamente
-mediante un script explícito y las plantillas se cargan una sola vez mediante
-`TemplateRepository`.
+La extracción, el motor de reconocimiento, el filtro temporal y el panel lateral se
+ejecutan dentro del ciclo de video. Las imágenes de referencia se procesan únicamente
+mediante un script explícito; las plantillas y cada imagen de presentación se cargan
+una sola vez y se reutilizan en memoria.
 
 ## Requisitos
 
@@ -133,6 +137,22 @@ mantiene estable también `display_image_path` frente a variaciones aisladas.
 filtro trabaja únicamente con resultados aceptados por `GestureMatcher`; por ello,
 el control previo de una o dos manos permanece vigente.
 
+## Visualización del resultado
+
+`RecognitionPipeline` conecta landmarks, extracción, comparación y estabilización.
+`OpenCVView` muestra el video con landmarks, FPS y cantidad de manos en el área
+principal, y reserva un panel lateral para la etiqueta, el porcentaje de similitud y
+la imagen asociada.
+
+La imagen solo se solicita a `ImageCache` cuando el resultado estabilizado tiene
+`accepted=True`. La caché lee cada ruta de `assets/display_images/` una vez —también
+recuerda fallos— y ajusta la imagen dentro del tamaño configurado sin alterar su
+proporción. No utiliza imágenes de `assets/reference_images/` como presentación.
+
+Cuando el resultado todavía no está confirmado, el panel muestra `Seña desconocida`
+y ninguna imagen. Si una plantilla aceptada no tiene imagen disponible, mantiene la
+etiqueta y puntuación e informa `Sin imagen asociada`.
+
 ## Modelo de MediaPipe
 
 El modelo no está incluido ni se descarga automáticamente. La ruta esperada es:
@@ -152,9 +172,10 @@ Después de instalar el proyecto:
 python -m gesture_matcher.app
 ```
 
-El comando carga el modelo, abre la cámara configurada y muestra el video con los
-landmarks detectados. Presiona Q o ESC para cerrar. La cámara, MediaPipe y las
-ventanas OpenCV se liberan tanto en la salida normal como ante errores.
+El comando carga modelo, plantillas y caché, abre la cámara configurada y muestra el
+video con landmarks y el panel de reconocimiento. Presiona Q o ESC para cerrar. La
+cámara, MediaPipe y las ventanas OpenCV se liberan tanto en la salida normal como
+ante errores.
 
 Los parámetros `hand_detection.max_hands`, `display.show_landmarks` y
 `display.show_fps` permiten seleccionar una o dos manos y activar o desactivar las
@@ -189,10 +210,13 @@ src/gesture_matcher/
 |   |-- feature_extractor.py
 |   |-- gesture_matcher.py
 |   |-- landmark_normalizer.py
+|   |-- recognition_pipeline.py
 |   |-- template_builder.py
 |   |-- temporal_filter.py
 |   `-- template_repository.py
-|-- ui/opencv_view.py
+|-- ui/
+|   |-- image_overlay.py
+|   `-- opencv_view.py
 |-- utils/
 `-- vision/
     |-- hand_detector.py
@@ -208,6 +232,6 @@ transmitir ni subir imágenes de la cámara sin una acción explícita del usuar
 
 ## Próximo incremento
 
-Iniciar la Fase 8 conectando extracción, reconocimiento y estabilización al ciclo de
-video, y presentar etiqueta, similitud e imagen asociada sin realizar lecturas de
-disco por fotograma.
+Validar visualmente el panel y calibrar umbrales con la cámara real. Después, la
+Fase 9 puede evaluar una interfaz avanzada únicamente si el MVP mantiene estabilidad
+y rendimiento suficientes.

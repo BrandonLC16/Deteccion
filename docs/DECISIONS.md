@@ -233,3 +233,47 @@ mantiene estable la ruta de la imagen asociada.
   `GestureMatcher`.
 - Los valores expresados en fotogramas deberán calibrarse con el FPS observado al
   integrar el motor al video.
+
+## 2026-07-31 — Panel lateral y caché de imágenes de presentación
+
+### Problema
+
+La interfaz debe mostrar video, reconocimiento e imagen relacionada sin deformar
+recursos ni introducir una lectura de disco en cada fotograma. Además, una imagen
+no debe aparecer antes de que la seña sea confirmada temporalmente.
+
+### Alternativas consideradas
+
+- Superponer la imagen directamente sobre el video.
+- Crear un panel lateral de tamaño estable.
+- Precargar todas las imágenes al iniciar.
+- Cargar cada imagen al primer uso y conservar éxitos y fallos en caché.
+- Usar imágenes de referencia cuando falte una imagen de presentación.
+
+### Decisión
+
+Componer una sola matriz OpenCV con video a la izquierda y panel de resultado a la
+derecha. El panel recibe únicamente el `MatchResult` devuelto por `TemporalFilter`.
+Solo consulta la imagen cuando `accepted=True` y existe `display_image_path`.
+
+Usar `ImageCache` con carga diferida por ruta relativa al proyecto. Guardar en caché
+tanto imágenes válidas como fallos para no repetir accesos. Ajustar cada imagen al
+rectángulo configurado conservando su relación de aspecto y rellenando el espacio
+restante, sin recortar ni estirar. Usar exclusivamente `assets/display_images/` y
+nunca las referencias como sustituto.
+
+### Motivo
+
+El panel evita cubrir landmarks y mantiene separada la información de resultado.
+La carga diferida evita memoria innecesaria para señas nunca mostradas, mientras la
+caché elimina I/O repetido. La condición `accepted=True` hace que la imagen siga la
+misma confirmación e histéresis que la etiqueta.
+
+### Consecuencias
+
+- El primer uso de una seña puede realizar una única lectura de disco.
+- Una imagen ausente se informa y no se intenta cargar nuevamente por fotograma.
+- Agregar una imagen de presentación requiere reconstruir metadatos.
+- El tamaño final se controla con `display.result_image_width` y
+  `display.result_image_height`.
+- La validación visual y el impacto real en FPS quedan pendientes en cámara física.
