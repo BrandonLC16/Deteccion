@@ -80,7 +80,7 @@ def test_shows_video_fps_hand_count_and_unknown_result(
     assert drawn_text == [
         "FPS: 29.8",
         "Manos: 2",
-        f"Seña detectada: {UNKNOWN_GESTURE_LABEL}",
+        f"Pose detectada: {UNKNOWN_GESTURE_LABEL}",
         "Similitud: 25.0 %",
     ]
     displayed = backend.imshow.call_args.args[1]
@@ -127,7 +127,7 @@ def test_respects_disabled_fps(
     drawn_text = [call.args[1] for call in backend.putText.call_args_list]
     assert drawn_text == [
         "Manos: 0",
-        f"Seña detectada: {UNKNOWN_GESTURE_LABEL}",
+        f"Pose detectada: {UNKNOWN_GESTURE_LABEL}",
         "Similitud: 25.0 %",
     ]
 
@@ -260,7 +260,7 @@ def test_known_result_without_image_reports_missing_association(
     )
 
     drawn_text = [call.args[1] for call in backend.putText.call_args_list]
-    assert "Seña detectada: Victory" in drawn_text
+    assert "Pose detectada: Victory" in drawn_text
     assert "Similitud: 93.0 %" in drawn_text
     assert "Sin imagen asociada" in drawn_text
 
@@ -272,7 +272,8 @@ def test_layout_is_compact_centered_and_uses_requested_proportions() -> None:
     assert layout.panel.height == MAX_PANEL_HEIGHT
     assert abs(layout.panel.x - (layout.canvas_width - layout.panel.right)) <= 1
     assert abs(layout.panel.y - (layout.canvas_height - layout.panel.bottom)) <= 1
-    assert layout.image_slot.width > layout.camera_slot.width
+    assert layout.image_slot.width == layout.camera_slot.width
+    assert layout.image_slot.height == layout.camera_slot.height
     sections_width = layout.camera_slot.width + layout.image_slot.width
     assert layout.camera_slot.width / sections_width == pytest.approx(
         CAMERA_WIDTH_RATIO,
@@ -298,7 +299,8 @@ def test_layout_adapts_to_window_size_and_remains_centered(
     assert abs(layout.panel.x - (layout.canvas_width - layout.panel.right)) <= 1
     assert abs(layout.panel.y - (layout.canvas_height - layout.panel.bottom)) <= 1
     assert layout.camera_slot.right < layout.image_slot.right <= layout.panel.right
-    assert layout.image_slot.width > layout.camera_slot.width
+    assert abs(layout.image_slot.width - layout.camera_slot.width) <= 1
+    assert layout.image_slot.height == layout.camera_slot.height
 
 
 @pytest.mark.parametrize(
@@ -358,10 +360,11 @@ def test_camera_keeps_its_aspect_ratio_inside_smaller_section(
     rendered_width = columns.max() - columns.min() + 1
 
     assert rendered_width / rendered_height == pytest.approx(16 / 9, rel=0.04)
-    assert layout.image_slot.width > layout.camera_slot.width
+    assert layout.image_slot.width == layout.camera_slot.width
+    assert layout.image_slot.height == layout.camera_slot.height
 
 
-def test_presentation_image_is_visually_larger_than_camera(
+def test_camera_and_presentation_use_same_size_sections(
     display_config: DisplayConfig,
     image_cache: Mock,
 ) -> None:
@@ -378,12 +381,16 @@ def test_presentation_image_is_visually_larger_than_camera(
     )
 
     displayed = backend.imshow.call_args.args[1]
-    camera_rows, camera_columns = np.where(np.all(displayed == 100, axis=2))
-    image_rows, image_columns = np.where(np.all(displayed == 200, axis=2))
-    camera_width = camera_columns.max() - camera_columns.min() + 1
-    camera_height = camera_rows.max() - camera_rows.min() + 1
-    image_width = image_columns.max() - image_columns.min() + 1
-    image_height = image_rows.max() - image_rows.min() + 1
+    layout = calculate_layout(INITIAL_WINDOW_WIDTH, INITIAL_WINDOW_HEIGHT)
+    camera_region = displayed[
+        layout.camera_slot.y : layout.camera_slot.bottom,
+        layout.camera_slot.x : layout.camera_slot.right,
+    ]
+    image_region = displayed[
+        layout.image_slot.y : layout.image_slot.bottom,
+        layout.image_slot.x : layout.image_slot.right,
+    ]
 
-    assert image_width > camera_width
-    assert image_height > camera_height
+    assert camera_region.shape == image_region.shape
+    assert np.any(camera_region == 100)
+    assert np.any(image_region == 200)

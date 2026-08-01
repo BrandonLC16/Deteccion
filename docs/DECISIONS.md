@@ -297,7 +297,7 @@ más peso visual que la imagen asociada y no respondía a cambios de tamaño de 
 
 Crear una ventana OpenCV redimensionable con tamaño inicial de 1024 × 640 píxeles y
 componer dentro de ella un panel de hasta 920 × 560 píxeles, centrado en ambos ejes.
-Distribuir el área visual horizontal en 38 % para cámara y 62 % para imagen de
+Distribuir el área visual horizontal por igual entre la cámara y la imagen de
 presentación, con 20 píxeles iniciales de separación y relleno interno. Colocar la
 etiqueta y la similitud debajo de ambas secciones.
 
@@ -311,13 +311,13 @@ la resolución de captura ni la entrada de MediaPipe.
 Una función geométrica independiente permite verificar centrado, límites y
 proporciones sin cámara ni ventana física. Los layouts relativos conservan el orden
 al redimensionar y el límite máximo mantiene compacto el contenido en pantallas
-grandes. Ajustar ambos recursos dentro de rectángulos evita deformación y mantiene
-la imagen confirmada como elemento principal.
+grandes. Ajustar ambos recursos dentro de rectángulos iguales evita deformación y
+mantiene un equilibrio visual entre la cámara y la imagen confirmada.
 
 ### Consecuencias
 
 - La cámara conserva landmarks, FPS y cantidad de manos ya dibujados.
-- La imagen asociada utiliza un área claramente mayor que la cámara.
+- La cámara y la imagen asociada utilizan cuadros del mismo tamaño.
 - En ventanas grandes el panel deja márgenes exteriores y no supera 920 × 560.
 - En ventanas más pequeñas se reducen proporcionalmente panel, espacios y texto.
 - `ImageCache`, la confirmación temporal y la lógica de reconocimiento no cambian.

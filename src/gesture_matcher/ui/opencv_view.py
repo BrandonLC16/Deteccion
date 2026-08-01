@@ -17,7 +17,7 @@ from gesture_matcher.utils.config_loader import DisplayConfig
 
 LOGGER = logging.getLogger(__name__)
 
-WINDOW_TITLE = "Gesture Matcher - Q o ESC para salir"
+WINDOW_TITLE = "Anime_Pose: Detección de señas y gestos"
 EXIT_KEYS = {27, ord("q"), ord("Q")}
 TEXT_COLOR = (255, 255, 255)
 WINDOW_BACKGROUND = (16, 16, 16)
@@ -35,7 +35,7 @@ MIN_OUTER_MARGIN = 12
 INNER_PADDING = 20
 SECTION_GAP = 20
 RESULT_INFO_HEIGHT = 90
-CAMERA_WIDTH_RATIO = 0.38
+CAMERA_WIDTH_RATIO = 0.50
 
 
 @dataclass(frozen=True)
@@ -312,7 +312,7 @@ class OpenCVView:
 
         self._draw_text(
             frame,
-            f"Seña detectada: {label}",
+            f"Pose detectada: {label}",
             (text_x, text_y),
             font_scale=layout.font_scale,
         )
