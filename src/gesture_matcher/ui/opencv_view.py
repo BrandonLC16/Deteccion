@@ -35,7 +35,7 @@ MIN_OUTER_MARGIN = 12
 INNER_PADDING = 20
 SECTION_GAP = 20
 RESULT_INFO_HEIGHT = 90
-CAMERA_WIDTH_RATIO = 0.50
+CAMERA_WIDTH_RATIO = 0.38
 
 
 @dataclass(frozen=True)
@@ -335,7 +335,7 @@ class OpenCVView:
             rect = self._backend.getWindowImageRect(self._window_title)
         except Exception as exc:
             LOGGER.debug(
-                "No se pudo consultar el tamaño actual de la ventana: %s",
+                "No se pudo consultar el tamano actual de la ventana: %s",
                 exc,
             )
             return self._window_width, self._window_height

@@ -12,7 +12,7 @@ hand_detection:
 
 recognition:
   similarity_method: cosine
-  similarity_threshold: 0.85
+  similarity_threshold: 0.89
   gesture_thresholds: {}
   mirror_left_hand: true
 

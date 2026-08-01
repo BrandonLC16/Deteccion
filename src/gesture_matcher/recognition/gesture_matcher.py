@@ -13,7 +13,7 @@ from gesture_matcher.recognition.template_repository import (
 )
 
 LOGGER = logging.getLogger(__name__)
-UNKNOWN_GESTURE_LABEL = "Seña desconocida"
+UNKNOWN_GESTURE_LABEL = "Pose desconocida"
 
 
 @dataclass(frozen=True)
