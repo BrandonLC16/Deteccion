@@ -4,6 +4,8 @@ Aplicación de escritorio en Python para reconocer señas estáticas a partir de
 geometría de landmarks de una o dos manos. El procesamiento será local y no
 guardará fotogramas ni video automáticamente.
 
+<video src="tests\test_video.mp4" width="320" height="240" controls></video>
+
 ## Estado actual
 
 El repositorio implementó la Fase 8: visualización del resultado.
