@@ -272,13 +272,17 @@ def test_layout_is_compact_centered_and_uses_requested_proportions() -> None:
     assert layout.panel.height == MAX_PANEL_HEIGHT
     assert abs(layout.panel.x - (layout.canvas_width - layout.panel.right)) <= 1
     assert abs(layout.panel.y - (layout.canvas_height - layout.panel.bottom)) <= 1
-    assert layout.image_slot.width == layout.camera_slot.width
     assert layout.image_slot.height == layout.camera_slot.height
     sections_width = layout.camera_slot.width + layout.image_slot.width
     assert layout.camera_slot.width / sections_width == pytest.approx(
         CAMERA_WIDTH_RATIO,
         abs=0.01,
     )
+    assert layout.image_slot.width / sections_width == pytest.approx(
+        1 - CAMERA_WIDTH_RATIO,
+        abs=0.01,
+    )
+    assert layout.image_slot.width > layout.camera_slot.width
     assert layout.image_slot.x - layout.camera_slot.right == layout.gap
 
 
@@ -299,8 +303,16 @@ def test_layout_adapts_to_window_size_and_remains_centered(
     assert abs(layout.panel.x - (layout.canvas_width - layout.panel.right)) <= 1
     assert abs(layout.panel.y - (layout.canvas_height - layout.panel.bottom)) <= 1
     assert layout.camera_slot.right < layout.image_slot.right <= layout.panel.right
-    assert abs(layout.image_slot.width - layout.camera_slot.width) <= 1
     assert layout.image_slot.height == layout.camera_slot.height
+    sections_width = layout.camera_slot.width + layout.image_slot.width
+    assert layout.camera_slot.width / sections_width == pytest.approx(
+        CAMERA_WIDTH_RATIO,
+        abs=0.01,
+    )
+    assert layout.image_slot.width / sections_width == pytest.approx(
+        1 - CAMERA_WIDTH_RATIO,
+        abs=0.01,
+    )
 
 
 @pytest.mark.parametrize(
@@ -360,11 +372,11 @@ def test_camera_keeps_its_aspect_ratio_inside_smaller_section(
     rendered_width = columns.max() - columns.min() + 1
 
     assert rendered_width / rendered_height == pytest.approx(16 / 9, rel=0.04)
-    assert layout.image_slot.width == layout.camera_slot.width
+    assert layout.image_slot.width > layout.camera_slot.width
     assert layout.image_slot.height == layout.camera_slot.height
 
 
-def test_camera_and_presentation_use_same_size_sections(
+def test_camera_and_presentation_use_38_62_sections(
     display_config: DisplayConfig,
     image_cache: Mock,
 ) -> None:
@@ -391,6 +403,15 @@ def test_camera_and_presentation_use_same_size_sections(
         layout.image_slot.x : layout.image_slot.right,
     ]
 
-    assert camera_region.shape == image_region.shape
+    sections_width = camera_region.shape[1] + image_region.shape[1]
+    assert camera_region.shape[0] == image_region.shape[0]
+    assert camera_region.shape[1] / sections_width == pytest.approx(
+        CAMERA_WIDTH_RATIO,
+        abs=0.01,
+    )
+    assert image_region.shape[1] / sections_width == pytest.approx(
+        1 - CAMERA_WIDTH_RATIO,
+        abs=0.01,
+    )
     assert np.any(camera_region == 100)
     assert np.any(image_region == 200)

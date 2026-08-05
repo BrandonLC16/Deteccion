@@ -280,6 +280,8 @@ misma confirmación e histéresis que la etiqueta.
 
 ## 2026-07-31 — Panel principal compacto, centrado y responsivo
 
+> Sustituida parcialmente por la decisión de reparto 38/62 del 2026-08-04.
+
 ### Problema
 
 El lienzo anterior crecía a partir del tamaño nativo de la cámara y agregaba un panel
@@ -321,4 +323,49 @@ mantiene un equilibrio visual entre la cámara y la imagen confirmada.
 - En ventanas grandes el panel deja márgenes exteriores y no supera 920 × 560.
 - En ventanas más pequeñas se reducen proporcionalmente panel, espacios y texto.
 - `ImageCache`, la confirmación temporal y la lógica de reconocimiento no cambian.
+- La validación visual con cámara física sigue pendiente.
+
+## 2026-08-04 — Reparto visual 38/62 entre cámara e imagen
+
+### Problema
+
+El reparto 50/50 daba el mismo peso horizontal al video de contexto y a la imagen
+asociada. El diseño vigente requiere que el resultado confirmado tenga mayor
+presencia visual sin modificar la captura, la detección ni la geometría interna de
+los recursos.
+
+### Alternativas consideradas
+
+- Mantener las dos secciones con el mismo ancho.
+- Asignar el 62 % a la cámara y el 38 % a la imagen asociada.
+- Asignar el 38 % a la cámara y el 62 % a la imagen asociada.
+- Cambiar las proporciones de manera dinámica según el contenido.
+
+### Decisión
+
+Distribuir el ancho útil de la franja visual con una proporción fija 38/62: 38 %
+para la cámara y 62 % para la imagen asociada. La separación entre secciones no
+forma parte de ese ancho útil. Ambas secciones mantienen la misma altura y cada
+recurso se ajusta dentro de su rectángulo conservando su relación de aspecto, sin
+recorte ni deformación.
+
+La constante `CAMERA_WIDTH_RATIO = 0.38` representa este contrato. El redondeo a
+píxeles enteros puede introducir una diferencia mínima respecto de la proporción
+matemática, por lo que las pruebas usan una tolerancia de un punto porcentual.
+
+### Motivo
+
+El reparto prioriza visualmente la imagen que comunica el resultado reconocido y
+mantiene el video como contexto suficiente para observar la detección. Conservar la
+altura compartida y el ajuste proporcional mantiene un layout estable al cambiar
+el tamaño de la ventana.
+
+### Consecuencias
+
+- La imagen asociada dispone de más ancho que la cámara en todos los tamaños.
+- El video conserva landmarks, FPS y cantidad de manos, además de su relación de
+  aspecto.
+- El panel continúa centrado y limitado a 920 × 560 píxeles.
+- No cambian la resolución de captura, MediaPipe, `ImageCache`, el reconocimiento ni
+  la estabilización temporal.
 - La validación visual con cámara física sigue pendiente.

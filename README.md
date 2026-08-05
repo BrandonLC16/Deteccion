@@ -40,7 +40,8 @@ Actualmente incluye:
 - retención breve del último resultado e histéresis para evitar alternancias;
 - reinicio explícito del historial y conservación estable de la imagen asociada.
 - pipeline conectado de detección, extracción, comparación y estabilización;
-- panel principal compacto y centrado con cuadros iguales para cámara e imagen;
+- panel principal compacto y centrado con reparto horizontal 38/62 para cámara e
+  imagen;
 - caché de imágenes con ajuste proporcional y reutilización entre fotogramas;
 - estado visible `Seña desconocida` mientras no exista una coincidencia confirmada.
 
@@ -141,8 +142,9 @@ el control previo de una o dos manos permanece vigente.
 
 `RecognitionPipeline` conecta landmarks, extracción, comparación y estabilización.
 `OpenCVView` muestra un panel compacto centrado dentro de una ventana redimensionable.
-La franja superior distribuye el ancho por igual entre la cámara y la imagen
-asociada; la etiqueta y el porcentaje de similitud quedan debajo de ambas.
+La franja superior asigna el 38 % del ancho útil a la cámara y el 62 % a la imagen
+asociada; ambas secciones conservan la misma altura y la etiqueta y el porcentaje
+de similitud quedan debajo de ellas.
 El panel parte de una ventana de 1024 × 640 píxeles y limita su contenido a 920 × 560
 píxeles, por lo que conserva márgenes visibles y no crece hasta ocupar toda la
 pantalla.
